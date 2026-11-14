@@ -1,10 +1,11 @@
 <!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dasbor Abba</title>
-<style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#eef3ff;color:#223}header{background:#4361ee;color:#fff;padding:10px;font-weight:700;text-align:center}
+<script src="prof.js"></script><style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#eef3ff;color:#223}header{background:#4361ee;color:#fff;padding:10px;font-weight:700;text-align:center}
 .box{background:#fff;margin:8px;padding:10px;border-radius:14px}button,input{font-size:15px;border:0;border-radius:10px;padding:8px 10px;margin:3px;background:#dfe6ff}.g{display:flex;flex-wrap:wrap;gap:8px}.it{width:110px;text-align:center;font-size:12px}.it img{width:100%;border-radius:8px}</style></head><body>
-<header>👨‍👧 Dasbor Abba · Shanum Hiyannuryah</header>
+<header>👨‍👧 Dasbor <span class="ortu">Abba</span> · <span class="nm">Shanum</span></header>
 <div class="box"><b>Kode keluarga:</b> <input id="fam" size="10"><button id="sf">Simpan</button> <span id="st" style="font-size:12px"></span></div>
 <div class="box"><b>📊 Penilaian &amp; riwayat gambar</b> <div id="sum" style="margin:6px 0"></div><div class="g" id="h"></div>
 <small>Penilaian saat ini otomatis sederhana (kelengkapan warna dan coretan). Menulis &amp; membaca belum ada.</small></div>
+<div class="box"><b>📈 Laporan perkembangan</b><div id="rp">Belum ada data</div></div>
 <div class="box"><b>📖 Nilai belajar (ngaji, doa, hitung, menulis)</b><div id="bj"></div></div>
 <div class="box"><b>📝 Tambah doa / surat baru untuk Shanum</b><br><input id="ln" placeholder="Judul, mis. Doa masuk rumah" style="width:95%">
 <textarea id="la" rows="3" dir="rtl" placeholder="Teks Arab, satu baris = satu bagian" style="width:95%;margin:3px"></textarea>
@@ -14,14 +15,20 @@
 <label><button onclick="this.nextElementSibling.click()">🎵 Kirim lagu (maks ±700 KB)</button><input id="fs" type="file" accept="audio/*" hidden></label></div>
 <div class="box"><b>💬 Pesan</b><div><input id="ci" placeholder="Tulis pesan untuk Shanum..." style="width:70%"><button id="cs">Kirim</button></div><div id="cl"></div></div>
 <script type="module">
-import * as C from './cloud.js';const $=s=>document.querySelector(s);
+import * as C from './cloud.js';navigator.serviceWorker?.register('sw.js');const $=s=>document.querySelector(s);
+let HL=[],BL=[];function rep(){const K={'Mengaji & doa':[],'Membaca':[],'Menulis':[],'Berhitung':[],'Tebak-tebakan':[],'Karakter baik':[],'Menggambar':HL.map(x=>x.score)};
+BL.forEach(x=>{const j=String(x.jenis);K[/Surat|Doa/.test(j)?'Mengaji & doa':/Membaca|Mengeja|Cocokkan/.test(j)?'Membaca':/Menulis/.test(j)?'Menulis':/Berhitung/.test(j)?'Berhitung':/Tebak/.test(j)?'Tebak-tebakan':'Karakter baik'].push(x.nilai)});
+const R=Object.entries(K).filter(e=>e[1].length).map(([k,a])=>[k,Math.round(a.reduce((p,q)=>p+q,0)/a.length),a.length]);if(!R.length)return;
+const hi=R.reduce((a,b)=>b[1]>a[1]?b:a),lo=R.reduce((a,b)=>b[1]<a[1]?b:a),av=Math.round(R.reduce((a,b)=>a+b[1],0)/R.length);
+$('#rp').innerHTML=R.map(([k,v,n])=>'<div style="margin:6px 0">'+k+': <b>'+v+'</b> ('+n+'x)<div style="background:#dfe6ff;border-radius:6px"><div style="width:'+v+'%;background:#4361ee;height:10px;border-radius:6px"></div></div></div>').join('')+
+'<div style="margin-top:8px;background:#f3f6ff;padding:8px;border-radius:10px">'+PROF.nama+' paling kuat di <b>'+hi[0]+'</b> (rata-rata '+hi[1]+'). '+(R.length>1&&lo[1]<hi[1]?'Perlu lebih banyak latihan di <b>'+lo[0]+'</b>. ':'')+(av>=75?'Perkembangan secara umum sangat baik 👏':av>=55?'Perkembangan baik, terus semangati ya 👍':'Masih tahap awal, temani dan beri pujian supaya makin semangat 💪')+'</div>'}
 $('#fam').value=C.getFam();$('#sf').onclick=()=>C.setFam($('#fam').value);$('#st').textContent=C.online?'🟢 Online':C.err?'🔴 Gagal: '+C.err:'🟡 Mode lokal (isi firebase-config.js)';
-C.sub('hist',l=>{const av=l.length?Math.round(l.reduce((a,b)=>a+b.score,0)/l.length):0;$('#sum').textContent=l.length?`Rata-rata nilai: ${av} dari ${l.length} gambar terakhir`:'Belum ada gambar';
+C.sub('hist',l=>{HL=l;rep();const av=l.length?Math.round(l.reduce((a,b)=>a+b.score,0)/l.length):0;$('#sum').textContent=l.length?`Rata-rata nilai: ${av} dari ${l.length} gambar terakhir`:'Belum ada gambar';
 $('#h').innerHTML=l.map(x=>`<div class="it"><img src="${x.thumb}"><div>⭐ ${x.score} · ${x.mv}</div><div>${new Date(x.t).toLocaleString('id-ID')}</div></div>`).join('')});
 C.sub('chat',l=>$('#cl').innerHTML=l.slice(0,8).map(m=>`<div><b>${m.from}:</b> ${String(m.text).replace(/</g,'&lt;')}</div>`).join(''));
-C.sub('belajar',l=>$('#bj').innerHTML=l.slice(0,12).map(x=>`<div>${x.nilai>=75?'🌟':'📝'} <b>${x.jenis}</b> · nilai ${x.nilai} · ${new Date(x.t).toLocaleString('id-ID')}</div>`).join('')||'Belum ada');
+C.sub('belajar',l=>{BL=l;rep();$('#bj').innerHTML=l.slice(0,12).map(x=>`<div>${x.nilai>=75?'🌟':'📝'} <b>${x.jenis}</b> · nilai ${x.nilai} · ${new Date(x.t).toLocaleString('id-ID')}</div>`).join('')||'Belum ada'});
 $('#lb').onclick=()=>{const a=$('#la').value.split('\n').map(x=>x.trim()).filter(Boolean),l=$('#ll').value.split('\n').map(x=>x.trim()),n=$('#ln').value.trim();if(!n||!a.length)return alert('Isi judul dan teks Arab');C.add('lessons',{n,v:a.map((x,i)=>[x,l[i]||''])});$('#ln').value=$('#la').value=$('#ll').value='';alert('Pelajaran terkirim ✔')};
-$('#cs').onclick=()=>{const v=$('#ci').value.trim();if(v){C.add('chat',{from:'Abba',text:v});$('#ci').value=''}};
+$('#cs').onclick=()=>{const v=$('#ci').value.trim();if(v){C.add('chat',{from:PROF.ortu,text:v});$('#ci').value=''}};
 $('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;const i=new Image();i.onload=()=>{const k=Math.min(1,640/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);C.add('media',{kind:'img',name:f.name,data:c.toDataURL('image/jpeg',.7)});alert('Gambar terkirim ✔')};i.src=URL.createObjectURL(f)};
 $('#fs').onchange=e=>{const f=e.target.files[0];if(!f)return;if(f.size>700000)return alert('Lagu terlalu besar (maks ±700 KB). Potong/kompres dulu.');const r=new FileReader();r.onload=()=>{C.add('media',{kind:'song',name:f.name,data:r.result});alert('Lagu terkirim ✔')};r.readAsDataURL(f)};
 </script></body></html>

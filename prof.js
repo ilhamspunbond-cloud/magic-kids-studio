@@ -1,0 +1,2 @@
+window.PROF=(()=>{const L=localStorage,sim=L.sim||'1',p=JSON.parse(L['p'+sim]||'{}'),n=p.nama||L.nama||'Shanum';return{sim,nama:n,ortu:p.ortu||'Abba',say:p.say||n.replace(/sh/gi,'s'),logo:p.logo||'logo.svg'}})();
+addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('.nm').forEach(e=>e.textContent=PROF.nama);document.querySelectorAll('.ortu').forEach(e=>e.textContent=PROF.ortu);document.querySelectorAll('img.logo').forEach(e=>e.src=PROF.logo)});

@@ -14,7 +14,7 @@ try {
 const key = c => `l_${fam}_${c}`;
 export async function add(col, data) {
   data.t = Date.now();
-  if (online) return fs.push(fs.ref(db, `fam/${fam}/${col}`), data);
+  if (online) { try { return await fs.push(fs.ref(db, `fam/${fam}/${col}`), data); } catch (e) { alert('Gagal simpan ke Firebase: ' + (e.message || e) + '\nCek Rules sudah di-Publish dan databaseURL benar.'); return; } }
   try {
     const a = JSON.parse(localStorage.getItem(key(col)) || '[]');
     a.push({ id: data.t, ...data });
