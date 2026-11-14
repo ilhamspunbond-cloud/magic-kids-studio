@@ -23,9 +23,9 @@ button.on{background:#ff6fa5;color:#fff}.big{background:#4cc38a;color:#fff;font-
 </div>
 <div class="tb" id="sm" hidden>
  <div><button id="nw">➕ Gambar baru</button><button id="pp" class="on">⏸</button><button id="rec">⏺ Rekam</button><button onclick="wall()">📱 Wallpaper</button></div>
- <div><select id="mv2"></select><button id="del">🗑 Hapus gambar</button><label><button onclick="this.nextElementSibling.click()">🎵 Lagu</button><input id="sg" type="file" accept="audio/*" hidden></label></div>
+ <div><select id="mv2"></select><button id="del">🗑 Hapus gambar</button></div>
 </div>
-<div class="tb"><button onclick="pn.hidden=!pn.hidden">💌 Abba &amp; Pesan</button></div>
+<div class="tb"><label><button onclick="this.nextElementSibling.click()">🎵 Lagu</button><input id="sg" type="file" accept="audio/*" hidden></label><button id="mt">⏯ Musik</button><button onclick="pn.hidden=!pn.hidden">💌 Abba &amp; Pesan</button></div>
 <div id="pn" hidden>
  <b>Kode keluarga:</b> <input id="fam" size="10"><button id="sf">Simpan</button><div id="st" style="font-size:12px"></div>
  <div><input id="ci" placeholder="Tulis pesan untuk Abba..." style="width:65%"><button id="cs">Kirim</button></div><div id="cl"></div>
@@ -65,6 +65,7 @@ const p=x.getImageData(0,0,W,H).data,o=w.createImageData(W,H),q=o.data;q.fill(25
 for(let y=0;y<H-1;y++)for(let xx=0;xx<W-1;xx++){const i=(y*W+xx)*4,e=Math.abs(L(i)-L(i+4))+Math.abs(L(i)-L(i+W*4));if(e>26){q[i]=q[i+1]=q[i+2]=0}}w.putImageData(o,0,0);strokes=0;toast('Gambar jadi garis! Ayo diwarnai 🎨')}
 const loadImg=src=>{const i=new Image();i.onload=()=>lineArt(i);i.src=src};
 $('#up').onchange=e=>{const f=e.target.files[0];if(f)loadImg(URL.createObjectURL(f))};
+$('#mt').onclick=()=>{const m=$('#mus');if(!m.src)return toast('Pilih lagu dulu: 🎵 atau kiriman Abba 💌');m.paused?m.play():m.pause()};
 $('#sg').onchange=e=>{const f=e.target.files[0];if(f){$('#mus').src=URL.createObjectURL(f);$('#mus').play()}};
 function nilai(){const p=w.getImageData(0,0,W,H).data;let c=0,hs=new Set;for(let i=0;i<p.length;i+=16){const r=p[i],gg=p[i+1],b=p[i+2];if(Math.max(r,gg,b)-Math.min(r,gg,b)>40){c++;hs.add((r>>6)+','+(gg>>6)+','+(b>>6))}}
 return Math.min(100,Math.round(45+c/(W*H/4)*180+hs.size*3+Math.min(strokes,10)*1.5))}

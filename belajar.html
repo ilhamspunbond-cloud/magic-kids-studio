@@ -70,4 +70,6 @@ const M=$('#menu');M.innerHTML='<h3>🕌 Ngaji &amp; Doa</h3>';
 for(const k in L){const b=document.createElement('button');b.textContent=L[k].n;b.onclick=()=>ngaji(k);M.append(b)}
 M.insertAdjacentHTML('beforeend','<h3>🔢 Berhitung</h3>');let b=document.createElement('button');b.textContent='Hitung bersama';b.onclick=hitung;M.append(b);
 M.insertAdjacentHTML('beforeend','<h3>✍️ Menulis huruf hijaiyah</h3>');HURUF.forEach((h,i)=>{const e=document.createElement('button');e.textContent=h[0]+' '+h[1];e.onclick=()=>huruf(i);M.append(e)});
+M.insertAdjacentHTML('beforeend','<h3>🎁 Pelajaran baru dari Abba</h3><div id="rl"></div>');
+C.sub('lessons',l=>{$('#rl').innerHTML=l.length?'':'Belum ada';l.forEach(d=>{L['r'+d.id]={n:d.n,v:d.v};const e=document.createElement('button');e.textContent=d.n;e.onclick=()=>ngaji('r'+d.id);$('#rl').append(e)})});
 </script></body></html>
