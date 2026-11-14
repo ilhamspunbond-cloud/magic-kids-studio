@@ -6,7 +6,7 @@ button{font-size:15px;border:0;border-radius:12px;padding:9px 12px;margin:3px;ba
 #ar{font-size:34px;line-height:1.9;margin:12px 8px 0;font-family:'Amiri','Noto Naskh Arabic',serif}#lt{font-size:15px;color:#567}#msg{margin:10px;font-size:17px;min-height:50px;font-weight:600}
 canvas{touch-action:none;background:#fff;border:3px solid #2a9d5c;border-radius:14px}
 </style></head><body>
-<header>📖 Belajar bersama Shanum · <a href="index.html">🎨 Menggambar</a></header>
+<header>📖 Belajar bersama Shanum · <a href="index.html">🏠 Menu</a></header>
 <div id="menu"></div>
 <div id="pl" hidden><button id="stop">⏹ Berhenti</button>
 <div id="ar" dir="rtl"></div><div id="lt"></div><div id="msg"></div>
@@ -66,10 +66,16 @@ for(let i=3;i<core.length;i+=4){if(core[i]>128){tc++;if(st[i]>0)cc++}if(st[i]>0)
 if(!sc)return msg('Ayo tulis dulu ya ✏️');const n=Math.round(100*(.6*Math.min(1,cc/tc*1.3)+.4*ins/sc));
 msg(n>=70?`Tulisanmu bagus! ⭐ Nilai ${n}`:`Hampir! Ikuti garis abu-abu ya. Nilai ${n}`);speak(n>=70?'Wah, tulisanmu bagus, Sanum!':'Hampir bagus. Coba ikuti garis abunya ya');C.add('belajar',{jenis:'Menulis huruf '+HURUF[hi][1],nilai:n,who:'Shanum'})};
 $('#stop').onclick=()=>{run++;speechSynthesis.cancel();$('#pl').hidden=true;$('#menu').hidden=false};
-const M=$('#menu');M.innerHTML='<h3>🕌 Ngaji &amp; Doa</h3>';
-for(const k in L){const b=document.createElement('button');b.textContent=L[k].n;b.onclick=()=>ngaji(k);M.append(b)}
-M.insertAdjacentHTML('beforeend','<h3>🔢 Berhitung</h3>');let b=document.createElement('button');b.textContent='Hitung bersama';b.onclick=hitung;M.append(b);
-M.insertAdjacentHTML('beforeend','<h3>✍️ Menulis huruf hijaiyah</h3>');HURUF.forEach((h,i)=>{const e=document.createElement('button');e.textContent=h[0]+' '+h[1];e.onclick=()=>huruf(i);M.append(e)});
-M.insertAdjacentHTML('beforeend','<h3>🎁 Pelajaran baru dari Abba</h3><div id="rl"></div>');
-C.sub('lessons',l=>{$('#rl').innerHTML=l.length?'':'Belum ada';l.forEach(d=>{L['r'+d.id]={n:d.n,v:d.v};const e=document.createElement('button');e.textContent=d.n;e.onclick=()=>ngaji('r'+d.id);$('#rl').append(e)})});
+async function baca(i){const id=open();$('#stop').textContent='⬅ Kembali';const[a,n]=HURUF[i];$('#ar').textContent=a;$('#lt').textContent=n;let ok=0;
+for(let t=0;t<3&&!ok&&id==run;t++){msg('👂 Dengarkan...');await speak(n);if(id!=run)return;msg('🗣 Giliran kamu, Shanum!');await speak('Giliran kamu, Sanum!');if(id!=run)return;msg('🎙 Mendengarkan...');const al=await listen('id-ID',6000);if(id!=run)return;if(al===null)return msg(fail);
+if(al.some(x=>sim(x.trim().toLowerCase(),n.toLowerCase())>=.6)){ok=1;msg('✅ Benar!');await speak('Wah, hebat Sanum! Benar')}else await speak('Coba lagi ya, dengarkan lagi')}
+if(id==run)selesai(id,'Membaca huruf '+n,ok?100:40)}
+const H=location.hash.slice(1)||'ngaji',M=$('#menu'),mk=(t,f)=>{const e=document.createElement('button');e.textContent=t;e.onclick=f;M.append(e)};
+const TT={ngaji:'🕌 Ngaji &amp; Doa',baca:'📖 Membaca huruf hijaiyah',tulis:'✍️ Menulis huruf hijaiyah',hitung:'🔢 Berhitung'};M.innerHTML='<h3>'+(TT[H]||TT.ngaji)+'</h3>';
+if(H=='baca')HURUF.forEach((h,i)=>mk(h[0]+' '+h[1],()=>baca(i)));
+else if(H=='tulis')HURUF.forEach((h,i)=>mk(h[0]+' '+h[1],()=>huruf(i)));
+else if(H=='hitung')mk('▶ Mulai hitung bersama',hitung);
+else{for(const k in L)mk(L[k].n,()=>ngaji(k));M.insertAdjacentHTML('beforeend','<h3>🎁 Pelajaran baru dari Abba</h3><div id="rl"></div>');
+C.sub('lessons',l=>{$('#rl').innerHTML=l.length?'':'Belum ada';l.forEach(d=>{L['r'+d.id]={n:d.n,v:d.v};const e=document.createElement('button');e.textContent=d.n;e.onclick=()=>ngaji('r'+d.id);$('#rl').append(e)})})}
+addEventListener('hashchange',()=>location.reload());
 </script></body></html>

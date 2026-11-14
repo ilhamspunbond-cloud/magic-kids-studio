@@ -1,0 +1,142 @@
+<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>Rojak Magic Kids Studio</title><link rel="manifest" href="manifest.json"><meta name="theme-color" content="#ff6fa5">
+<style>
+*{box-sizing:border-box;touch-action:manipulation}[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,sans-serif;background:#fff0f6;color:#333;text-align:center}
+header{background:linear-gradient(90deg,#ff6fa5,#ffb36b);color:#fff;padding:8px;font-weight:700}
+canvas{width:100%;max-width:420px;touch-action:none;background:#fff;border:3px solid #ff6fa5;border-radius:14px;margin-top:6px}
+button,select,input{font-size:15px;border:0;border-radius:12px;padding:8px 10px;margin:3px;background:#ffd6e7}
+button.on{background:#ff6fa5;color:#fff}.big{background:#4cc38a;color:#fff;font-weight:700}
+#pal span{display:inline-block;width:30px;height:30px;border-radius:50%;margin:3px;border:3px solid #fff;box-shadow:0 0 0 1px #aaa}#pal span.on{box-shadow:0 0 0 3px #333}
+#pn{background:#fff;margin:6px;padding:8px;border-radius:12px;text-align:left;font-size:14px}#pn img{height:56px;border-radius:8px;margin:2px}
+#toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 16px;border-radius:14px;z-index:9}
+#ex{position:fixed;top:8px;right:8px;display:none;z-index:9}.wp #ex{display:block}.wp header,.wp .tb,.wp #pn{display:none!important}.wp canvas{max-width:100vw;max-height:100vh;border:0;border-radius:0;margin:0}
+</style></head><body>
+<header>🎨 Rojak Magic Kids Studio · Shanum Hiyannuryah <a href="index.html" style="color:#fff;margin-left:8px">🏠 Menu</a></header>
+<canvas id="c" width="360" height="440"></canvas><canvas id="s" width="360" height="440" hidden></canvas>
+<button id="ex" onclick="wall()">✖</button><audio id="mus" loop></audio>
+<div class="tb" id="dm">
+ <div><button id="t_pen" class="on">✏️ Pensil</button><button id="t_fill">🪣 Warna</button><button id="t_er">🧽 Hapus</button><button id="clr">🗑 Bersih</button></div>
+ <div id="pal"></div>
+ <div><select id="tpl"><option value="">📋 Template gambar</option><option value="orang">🧍 Orang</option><option value="ikan">🐟 Ikan</option><option value="pohon">🌳 Pohon</option><option value="kucing">🐱 Kucing</option><option value="kelinci">🐰 Kelinci</option><option value="beruang">🐻 Beruang</option><option value="penguin">🐧 Penguin</option><option value="dino">🦖 Dino</option><option value="bunga">🌸 Bunga</option></select>
+ <label><button onclick="this.nextElementSibling.click()">🖼 Upload gambar</button><input id="up" type="file" accept="image/*" hidden></label></div>
+ <div><select id="mv"></select><button class="big" id="done">✔ Selesai → Gerak!</button></div>
+</div>
+<div class="tb" id="sm" hidden>
+ <div><button id="nw">➕ Gambar baru</button><button id="pp" class="on">⏸</button><button id="rec">⏺ Rekam</button><button onclick="wall()">📱 Wallpaper</button></div>
+ <div><select id="mv2"></select><button id="del">🗑 Hapus gambar</button></div>
+</div>
+<div class="tb"><label><button onclick="this.nextElementSibling.click()">🎵 Lagu</button><input id="sg" type="file" accept="audio/*" hidden></label><button id="mt">⏯ Musik</button><button onclick="pn.hidden=!pn.hidden">💌 Abba &amp; Pesan</button></div>
+<div id="pn" hidden>
+ <b>Kode keluarga:</b> <input id="fam" size="10"><button id="sf">Simpan</button><div id="st" style="font-size:12px"></div>
+ <div><input id="ci" placeholder="Tulis pesan untuk Abba..." style="width:65%"><button id="cs">Kirim</button></div><div id="cl"></div>
+ <b>🎁 Kiriman Abba (tap untuk pakai):</b><div id="kr"></div>
+</div>
+<div id="toast" hidden></div>
+<script type="module">
+import * as C from './cloud.js';
+const $=s=>document.querySelector(s),W=360,H=440,wc=$('#c'),sc=$('#s'),w=wc.getContext('2d',{willReadFrequently:true}),g=sc.getContext('2d');
+const MOVES={lari:['🏃 Lari','m'],lompat:['🤸 Lompat','m'],menari:['💃 Menari','m'],tangan:['🔄 Putar tangan','m'],layangan:['🪁 Tarik layangan','m'],tali:['➰ Putar tali loncat','m'],jongkok:['🧎 Jongkok','m'],
+air:['🌊 Air','w'],pohon:['🌳 Pohon','t'],awan:['☁️ Awan','a'],hop:['🐇 Hewan melompat','l'],jalan:['🐕 Hewan jalan','l'],renang:['🐟 Berenang','s'],ubur:['🪼 Ubur-ubur','s'],kepiting:['🦀 Kepiting','s']};
+for(const k in MOVES)['#mv','#mv2'].forEach(i=>$(i).add(new Option(MOVES[k][0],k)));
+let tool='pen',col='#ff4d6d',pd=false,lp,strokes=0,sprites=[],sel=-1,playing=true,clk=0,rip=[],drag=false,off=[0,0];
+const COLS=['#000000','#ff4d6d','#ff9f1c','#ffd84d','#4cc38a','#2ec4ff','#4361ee','#9b5de5','#f15bb5','#8b5a2b','#ffffff'];
+COLS.forEach(c=>{const s=document.createElement('span');s.style.background=c;s.onclick=()=>{col=c;document.querySelectorAll('#pal span').forEach(x=>x.classList.remove('on'));s.classList.add('on');if(tool=='er')set('pen')};$('#pal').append(s)});
+$('#pal').children[1].classList.add('on');
+const toast=m=>{const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.i);toast.i=setTimeout(()=>t.hidden=true,3200)};
+const clr=()=>{w.fillStyle='#fff';w.fillRect(0,0,W,H);strokes=0};clr();
+function set(t){tool=t;['pen','fill','er'].forEach(x=>$('#t_'+x).classList.toggle('on',x==t))}
+$('#t_pen').onclick=()=>set('pen');$('#t_fill').onclick=()=>set('fill');$('#t_er').onclick=()=>set('er');$('#clr').onclick=clr;
+const pos=(e,c)=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height]};
+const rgb=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16));
+function fill(x,y){x|=0;y|=0;const d=w.getImageData(0,0,W,H),p=d.data,i0=(y*W+x)*4,tr=p[i0],tg=p[i0+1],tb=p[i0+2];if(tr+tg+tb<300)return;const[fr,fg,fb]=rgb(col);if(Math.abs(tr-fr)+Math.abs(tg-fg)+Math.abs(tb-fb)<10)return;
+const v=new Uint8Array(W*H),st=[x,y],m=i=>Math.abs(p[i]-tr)+Math.abs(p[i+1]-tg)+Math.abs(p[i+2]-tb)<110;
+while(st.length){const yy=st.pop(),xx=st.pop();if(xx<0||yy<0||xx>=W||yy>=H)continue;const k=yy*W+xx;if(v[k])continue;v[k]=1;const i=k*4;if(!m(i))continue;p[i]=fr;p[i+1]=fg;p[i+2]=fb;st.push(xx+1,yy,xx-1,yy,xx,yy+1,xx,yy-1)}
+w.putImageData(d,0,0);strokes++}
+wc.onpointerdown=e=>{const[x,y]=pos(e,wc);if(tool=='fill')return fill(x,y);pd=true;lp=[x,y];wc.setPointerCapture(e.pointerId);strokes++;w.beginPath();w.arc(x,y,2,0,7);w.fillStyle=tool=='er'?'#fff':col;w.fill()};
+wc.onpointermove=e=>{if(!pd)return;const[x,y]=pos(e,wc);w.lineCap='round';w.lineWidth=tool=='er'?20:5;w.strokeStyle=tool=='er'?'#fff':col;w.beginPath();w.moveTo(...lp);w.lineTo(x,y);w.stroke();lp=[x,y]};
+wc.onpointerup=()=>pd=false;
+const TPL={orang:()=>{S(()=>w.arc(180,100,38,0,7));S(()=>w.rect(150,140,60,110));S(()=>w.rect(100,142,50,26));S(()=>w.rect(210,142,50,26));S(()=>w.rect(150,250,28,90));S(()=>w.rect(182,250,28,90))},
+ikan:()=>{S(()=>w.ellipse(180,200,90,50,0,0,7));S(()=>{w.moveTo(262,200);w.lineTo(325,150);w.lineTo(325,250);w.closePath()});S(()=>w.arc(135,185,6,0,7))},
+pohon:()=>{S(()=>w.rect(165,250,30,110));S(()=>w.arc(180,190,80,0,7))}};
+const E=(x,y,a,b)=>S(()=>w.ellipse(x,y,a,b,0,0,7)),O=(x,y,r)=>E(x,y,r,r),R=(x,y,a,b)=>S(()=>w.rect(x,y,a,b)),P=(...p)=>S(()=>{w.moveTo(p[0],p[1]);for(let i=2;i<p.length;i+=2)w.lineTo(p[i],p[i+1]);w.closePath()});
+Object.assign(TPL,{kucing:()=>{E(180,255,68,80);E(268,290,14,55);O(180,140,60);P(130,105,122,48,168,88);P(230,105,238,48,192,88);O(160,135,7);O(200,135,7);P(171,155,189,155,180,168)},
+kelinci:()=>{E(180,275,60,72);O(180,155,48);E(152,75,16,52);E(208,75,16,52);O(165,148,6);O(195,148,6);E(180,172,10,7)},
+beruang:()=>{O(180,265,70);O(180,155,55);O(136,108,20);O(224,108,20);O(163,145,6);O(197,145,6);E(180,170,20,14)},
+penguin:()=>{E(180,260,62,90);O(180,152,44);P(171,160,189,160,180,175);O(165,148,5);O(195,148,5);E(108,262,14,46);E(252,262,14,46);E(152,352,24,9);E(208,352,24,9)},
+dino:()=>{E(170,250,80,58);E(258,168,46,34);O(272,156,5);P(100,232,22,305,108,290);R(130,298,28,52);R(192,298,28,52)},
+bunga:()=>{O(180,120,30);O(180,70,28);O(180,170,28);O(130,120,28);O(230,120,28);R(172,200,16,150);E(218,275,36,16)}});
+function S(f){w.beginPath();w.strokeStyle='#000';w.lineWidth=4;f();w.stroke()}
+$('#tpl').onchange=e=>{if(!e.target.value)return;clr();TPL[e.target.value]();$('#mv').value=({orang:'menari',ikan:'renang',pohon:'pohon',bunga:'pohon',kucing:'jalan',kelinci:'hop',beruang:'jalan',penguin:'jalan',dino:'jalan'})[e.target.value];e.target.value=''};
+function lineArt(img){const t=document.createElement('canvas');t.width=W;t.height=H;const x=t.getContext('2d'),s=Math.min(W/img.width,H/img.height);x.fillStyle='#fff';x.fillRect(0,0,W,H);x.drawImage(img,(W-img.width*s)/2,(H-img.height*s)/2,img.width*s,img.height*s);
+const p=x.getImageData(0,0,W,H).data,o=w.createImageData(W,H),q=o.data;q.fill(255);const L=i=>p[i]*.3+p[i+1]*.59+p[i+2]*.11;
+for(let y=0;y<H-1;y++)for(let xx=0;xx<W-1;xx++){const i=(y*W+xx)*4,e=Math.abs(L(i)-L(i+4))+Math.abs(L(i)-L(i+W*4));if(e>26){q[i]=q[i+1]=q[i+2]=0}}w.putImageData(o,0,0);strokes=0;toast('Gambar jadi garis! Ayo diwarnai 🎨')}
+const loadImg=src=>{const i=new Image();i.onload=()=>lineArt(i);i.src=src};
+$('#up').onchange=e=>{const f=e.target.files[0];if(f)loadImg(URL.createObjectURL(f))};
+$('#mt').onclick=()=>{const m=$('#mus');if(!m.src)return toast('Pilih lagu dulu: 🎵 atau kiriman Abba 💌');m.paused?m.play():m.pause()};
+$('#sg').onchange=e=>{const f=e.target.files[0];if(f){$('#mus').src=URL.createObjectURL(f);$('#mus').play()}};
+function nilai(){const p=w.getImageData(0,0,W,H).data;let c=0,hs=new Set;for(let i=0;i<p.length;i+=16){const r=p[i],gg=p[i+1],b=p[i+2];if(Math.max(r,gg,b)-Math.min(r,gg,b)>40){c++;hs.add((r>>6)+','+(gg>>6)+','+(b>>6))}}
+return Math.min(100,Math.round(45+c/(W*H/4)*180+hs.size*3+Math.min(strokes,10)*1.5))}
+function ding(){const a=ding.a||(ding.a=new AudioContext),n=a.currentTime;[523,659,784,1047].forEach((f,i)=>{const o=a.createOscillator(),x=a.createGain();o.frequency.value=f;o.connect(x);x.connect(a.destination);x.gain.setValueAtTime(.2,n+i*.12);x.gain.exponentialRampToValueAtTime(.001,n+i*.12+.3);o.start(n+i*.12);o.stop(n+i*.12+.3)})}
+function mode(m){wc.hidden=m!='d';sc.hidden=m=='d';$('#dm').hidden=m!='d';$('#sm').hidden=m=='d'}
+$('#done').onclick=()=>{const d=w.getImageData(0,0,W,H),p=d.data;let x0=W,y0=H,x1=0,y1=0;
+for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=(y*W+x)*4;if(p[i]>240&&p[i+1]>240&&p[i+2]>240)p[i+3]=0;else{if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
+if(x1<x0)return toast('Gambar dulu ya, Shanum! ✏️');
+const sc2=nilai(),t=document.createElement('canvas');t.width=W;t.height=H;t.getContext('2d').putImageData(d,0,0);
+const bw=x1-x0+1,bh=y1-y0+1,k=Math.min(1,180/Math.max(bw,bh)),c=document.createElement('canvas');c.width=Math.max(4,bw*k|0);c.height=Math.max(4,bh*k|0);c.getContext('2d').drawImage(t,x0,y0,bw,bh,0,0,c.width,c.height);
+const mv=$('#mv').value;sprites.push({img:c,w:c.width,h:c.height,x:50+Math.random()*260,y:MOVES[mv][1]=='s'||MOVES[mv][1]=='a'?120+Math.random()*150:300+Math.random()*30,mv,ph:Math.random()*6,dir:1});sel=sprites.length-1;$('#mv2').value=mv;
+const th=document.createElement('canvas');th.width=120;th.height=147;th.getContext('2d').drawImage(wc,0,0,120,147);C.add('hist',{thumb:th.toDataURL('image/jpeg',.6),score:sc2,mv:MOVES[mv][0],who:'Shanum'});
+mode('s');ding();toast((sc2>=85?'Luar biasa! ⭐⭐⭐ ':sc2>=65?'Keren! ⭐⭐ ':'Ayo tambah warna! ⭐ ')+'Nilai '+sc2)};
+$('#nw').onclick=()=>{clr();mode('d')};$('#pp').onclick=e=>{playing=!playing;e.target.textContent=playing?'⏸':'▶️'};
+$('#del').onclick=()=>{if(sel>=0)sprites.splice(sel,1);sel=-1};$('#mv2').onchange=e=>{if(sel>=0)sprites[sel].mv=e.target.value};
+sc.onpointerdown=e=>{const[x,y]=pos(e,sc);sel=-1;for(let i=sprites.length-1;i>=0;i--){const s=sprites[i],cen=['s','a'].includes(MOVES[s.mv][1]),top=cen?s.y-s.h/2:s.y-s.h;if(Math.abs(x-s.x)<s.w/2&&y>top&&y<top+s.h){sel=i;drag=true;off=[s.x-x,s.y-y];$('#mv2').value=s.mv;sc.setPointerCapture(e.pointerId);break}}
+if(sel<0)rip.push({x,y,t:performance.now()/1000})};
+sc.onpointermove=e=>{const[x,y]=pos(e,sc);if(drag&&sel>=0){sprites[sel].x=x+off[0];sprites[sel].y=y+off[1]}else if(e.buttons&&document.body.classList.contains('wp'))rip.push({x,y,t:performance.now()/1000})};
+sc.onpointerup=()=>drag=false;
+window.wall=()=>{const on=document.body.classList.toggle('wp');sel=-1;if(on)document.documentElement.requestFullscreen?.().catch(()=>{});else if(document.fullscreenElement)document.exitFullscreen()};
+function pose(s,T){const o={dx:0,dy:0,r:0,sx:1,sy:1,a:0,b:0,v:0},S=Math.sin,A=Math.abs;
+switch(s.mv){
+case'lari':o.v=70;o.dy=-A(S(T*10))*8;o.r=.08;o.a=S(T*10)*.9;o.b=S(T*10)*.9;break;
+case'lompat':{const q=A(S(T*3));o.dy=-q*70;o.sy=1-(1-q)*.12;o.a=2*q;o.b=-2*q}break;
+case'menari':o.r=S(T*5)*.2;o.dy=-A(S(T*5))*8;o.a=1+S(T*5)*.8;o.b=-(1+Math.cos(T*5)*.8);break;
+case'tangan':o.a=T*7;o.b=-T*7;break;
+case'layangan':o.a=.2;o.b=-1.1+S(T*3)*.4;o.r=-.04+S(T*3)*.04;break;
+case'tali':o.dy=-Math.max(0,S(T*5))*28;o.a=.6+S(T*5)*.5;o.b=-o.a;break;
+case'jongkok':{const q=(S(T*2)+1)/2;o.sy=1-q*.4;o.a=-q*.6;o.b=q*.6}break;
+case'pohon':o.r=S(T*1.5)*.06;break;
+case'awan':o.v=15;o.dy=S(T)*6;break;
+case'hop':o.v=40;o.dy=-A(S(T*4))*45;o.r=S(T*4)*.1;break;
+case'jalan':o.v=35;o.dy=-A(S(T*8))*4;o.r=S(T*8)*.05;break;
+case'renang':o.v=50;o.dy=S(T*2)*15;o.r=S(T*4)*.15;break;
+case'ubur':o.dy=S(T*2)*25;o.sy=1+S(T*4)*.12;o.sx=1-S(T*4)*.08;break;
+case'kepiting':o.v=30;o.dx=S(T*8)*3;o.dy=-A(S(T*8))*3;break}
+return o}
+function dsp(s,o,T){const I=s.img,a=s.w,b=s.h,cat=MOVES[s.mv][1];
+if(cat=='m'){const x1=.3*a|0,x2=.7*a|0,y1=.15*b|0,y2=.65*b|0;g.drawImage(I,x1,0,x2-x1,b,x1,0,x2-x1,b);
+[[0,x1],[x2,a-x2]].forEach(([sx,sw])=>{g.drawImage(I,sx,0,sw,y1,sx,0,sw,y1);g.drawImage(I,sx,y2,sw,b-y2,sx,y2,sw,b-y2)});
+[[0,x1,o.a,x1],[x2,a-x2,o.b,x2]].forEach(([sx,sw,ang,px])=>{const py=y1+.1*b;g.save();g.translate(px,py);g.rotate(ang);g.drawImage(I,sx,y1,sw,y2-y1,sx-px,y1-py,sw,y2-y1);g.restore()});
+if(s.mv=='layangan'){g.strokeStyle='#555';g.lineWidth=1.5;g.beginPath();g.moveTo(a*.95,b*.3);g.lineTo(a*1.7,-b*.5);g.stroke();g.save();g.translate(a*1.7,-b*.5);g.rotate(.3+Math.sin(T*3)*.2);g.fillStyle='#ff4d6d';g.beginPath();g.moveTo(0,-22);g.lineTo(15,0);g.lineTo(0,26);g.lineTo(-15,0);g.fill();g.restore()}
+if(s.mv=='tali'){g.strokeStyle='#8b5a2b';g.lineWidth=3;g.beginPath();const st=T*5;g.ellipse(a/2,b*.55,a*.85,b*.62,0,st,st+Math.PI*1.3);g.stroke()}}
+else if(s.mv=='air'||s.mv=='renang'){const amp=s.mv=='air'?8:4;for(let y=0;y<b;y+=3)g.drawImage(I,0,y,a,3,Math.sin(y/7+T*4)*amp,y,a,3)}
+else g.drawImage(I,0,0)}
+function loop(ts){requestAnimationFrame(loop);if(sc.hidden)return;const t=ts/1000,dt=playing?Math.min(.05,t-(loop.p||t)):0;loop.p=t;clk+=dt;
+const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#aee6ff');gr.addColorStop(.75,'#e8f8ff');g.fillStyle=gr;g.fillRect(0,0,W,H);
+g.fillStyle='#ffd84d';g.beginPath();g.arc(300,55,28,0,7);g.fill();g.fillStyle='#8be08b';g.fillRect(0,335,W,H);g.fillStyle='#7ccbff';g.fillRect(0,395,W,H);
+rip=rip.filter(r=>t-r.t<1.5);let bl=0;rip.forEach(r=>bl=Math.max(bl,.8-(t-r.t)));
+if(!sprites.length){g.fillStyle='#999';g.font='16px sans-serif';g.textAlign='center';g.fillText('Belum ada gambar. Tekan ➕ Gambar baru',W/2,200)}
+sprites.forEach((s,i)=>{const cat=MOVES[s.mv][1],T=clk+s.ph,o=pose(s,T),a=s.w,b=s.h;s.x+=o.v*s.dir*dt;if(s.x>W-a/2)s.dir=-1;if(s.x<a/2)s.dir=1;
+g.save();if(bl>0)g.filter=`blur(${bl*3}px)`;g.translate(s.x+o.dx,s.y+o.dy);g.rotate(o.r);g.scale(o.sx*(o.v?s.dir:1),o.sy);g.translate(-a/2,cat=='s'||cat=='a'?-b/2:-b);dsp(s,o,T);
+if(i==sel&&!document.body.classList.contains('wp')){g.filter='none';g.strokeStyle='#ff6fa5';g.setLineDash([6,4]);g.strokeRect(-2,-2,a+4,b+4)}g.restore()});
+rip.forEach(r=>{const ag=t-r.t;g.strokeStyle=`rgba(255,255,255,${1-ag/1.5})`;g.lineWidth=3;g.beginPath();g.arc(r.x,r.y,ag*140,0,7);g.stroke();g.beginPath();g.arc(r.x,r.y,ag*90,0,7);g.stroke()})}
+requestAnimationFrame(loop);
+let chunks,rec;$('#rec').onclick=()=>{if(rec&&rec.state=='recording')return rec.stop();if(sc.hidden)return toast('Buat gerakan dulu ya');
+const st=sc.captureStream(30);try{$('#mus').captureStream().getAudioTracks().forEach(x=>st.addTrack(x))}catch(e){}
+rec=new MediaRecorder(st);chunks=[];rec.ondataavailable=e=>chunks.push(e.data);
+rec.onstop=async()=>{$('#rec').textContent='⏺ Rekam';const b=new Blob(chunks,{type:'video/webm'}),f=new File([b],'shanum.webm',{type:'video/webm'});
+if(navigator.canShare?.({files:[f]}))try{await navigator.share({files:[f]})}catch(e){}else{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='shanum.webm';a.click()}};
+rec.start();$('#rec').textContent='⏹ Stop'};
+$('#fam').value=C.getFam();$('#sf').onclick=()=>C.setFam($('#fam').value);$('#st').textContent=C.online?'🟢 Online (real time dengan Abba)':C.err?'🔴 Firebase gagal: '+C.err+' - cek firebase-config.js':'🟡 Mode lokal (isi firebase-config.js supaya terhubung ke Abba)';
+$('#cs').onclick=()=>{const v=$('#ci').value.trim();if(v){C.add('chat',{from:'Shanum',text:v});$('#ci').value=''}};
+C.sub('chat',l=>$('#cl').innerHTML=l.slice(0,6).map(m=>`<div><b>${m.from}:</b> ${String(m.text).replace(/</g,'&lt;')}</div>`).join(''));
+C.sub('media',l=>{const k=$('#kr');k.innerHTML='';l.slice(0,6).forEach(m=>{const e=m.kind=='img'?Object.assign(new Image(),{src:m.data}):Object.assign(document.createElement('button'),{textContent:'🎵 '+m.name});e.onclick=()=>{if(m.kind=='img'){loadImg(m.data);mode('d')}else{$('#mus').src=m.data;$('#mus').play();toast('Lagu dari Abba diputar 🎵')}};k.append(e)});
+if(l[0]&&l[0].t>(+localStorage.seen||0)&&localStorage.seen){toast('🎁 Ada kiriman baru dari Abba!')}localStorage.seen=l[0]?l[0].t:Date.now()});
+</script></body></html>

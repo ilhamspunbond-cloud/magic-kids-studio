@@ -15,7 +15,7 @@
 <div class="box"><b>💬 Pesan</b><div><input id="ci" placeholder="Tulis pesan untuk Shanum..." style="width:70%"><button id="cs">Kirim</button></div><div id="cl"></div></div>
 <script type="module">
 import * as C from './cloud.js';const $=s=>document.querySelector(s);
-$('#fam').value=C.getFam();$('#sf').onclick=()=>C.setFam($('#fam').value);$('#st').textContent=C.online?'🟢 Online':'🟡 Mode lokal (isi firebase-config.js)';
+$('#fam').value=C.getFam();$('#sf').onclick=()=>C.setFam($('#fam').value);$('#st').textContent=C.online?'🟢 Online':C.err?'🔴 Gagal: '+C.err:'🟡 Mode lokal (isi firebase-config.js)';
 C.sub('hist',l=>{const av=l.length?Math.round(l.reduce((a,b)=>a+b.score,0)/l.length):0;$('#sum').textContent=l.length?`Rata-rata nilai: ${av} dari ${l.length} gambar terakhir`:'Belum ada gambar';
 $('#h').innerHTML=l.map(x=>`<div class="it"><img src="${x.thumb}"><div>⭐ ${x.score} · ${x.mv}</div><div>${new Date(x.t).toLocaleString('id-ID')}</div></div>`).join('')});
 C.sub('chat',l=>$('#cl').innerHTML=l.slice(0,8).map(m=>`<div><b>${m.from}:</b> ${String(m.text).replace(/</g,'&lt;')}</div>`).join(''));

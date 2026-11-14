@@ -1,14 +1,16 @@
-import { cfg } from './firebase-config.js';
 let fam = localStorage.getItem('fam') || 'shanum';
 export const getFam = () => fam;
 export const setFam = c => { localStorage.setItem('fam', c.trim() || 'shanum'); location.reload(); };
-export const online = !!(cfg && cfg.apiKey && cfg.databaseURL);
+export let online = false, err = '';
 let db, fs;
-if (online) {
-  const A = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
-  fs = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
-  db = fs.getDatabase(A.initializeApp(cfg));
-}
+try {
+  const { cfg } = await import('./firebase-config.js');
+  if (cfg && cfg.apiKey && cfg.databaseURL && !/\.\.\.|xxxx/.test(cfg.apiKey + cfg.databaseURL)) {
+    const A = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    fs = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js');
+    db = fs.getDatabase(A.initializeApp(cfg)); online = true;
+  }
+} catch (e) { err = String(e.message || e).slice(0, 90); online = false; }
 const key = c => `l_${fam}_${c}`;
 export async function add(col, data) {
   data.t = Date.now();
