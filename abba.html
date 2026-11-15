@@ -5,6 +5,7 @@
 <div class="box"><b>Kode keluarga:</b> <input id="fam" size="10"><button id="sf">Simpan</button> <span id="st" style="font-size:12px"></span></div>
 <div class="box"><b>📊 Penilaian &amp; riwayat gambar</b> <div id="sum" style="margin:6px 0"></div><div class="g" id="h"></div>
 <small>Penilaian saat ini otomatis sederhana (kelengkapan warna dan coretan). Menulis &amp; membaca belum ada.</small></div>
+<div class="box"><b>🔴 Aktivitas langsung</b><div id="lv">Menunggu data...</div></div>
 <div class="box"><b>📈 Laporan perkembangan</b><div id="rp">Belum ada data</div></div>
 <div class="box"><b>📖 Nilai belajar (ngaji, doa, hitung, menulis)</b><div id="bj"></div></div>
 <div class="box"><b>📝 Tambah doa / surat baru untuk Shanum</b><br><input id="ln" placeholder="Judul, mis. Doa masuk rumah" style="width:95%">
@@ -22,6 +23,9 @@ const R=Object.entries(K).filter(e=>e[1].length).map(([k,a])=>[k,Math.round(a.re
 const hi=R.reduce((a,b)=>b[1]>a[1]?b:a),lo=R.reduce((a,b)=>b[1]<a[1]?b:a),av=Math.round(R.reduce((a,b)=>a+b[1],0)/R.length);
 $('#rp').innerHTML=R.map(([k,v,n])=>'<div style="margin:6px 0">'+k+': <b>'+v+'</b> ('+n+'x)<div style="background:#dfe6ff;border-radius:6px"><div style="width:'+v+'%;background:#4361ee;height:10px;border-radius:6px"></div></div></div>').join('')+
 '<div style="margin-top:8px;background:#f3f6ff;padding:8px;border-radius:10px">'+PROF.nama+' paling kuat di <b>'+hi[0]+'</b> (rata-rata '+hi[1]+'). '+(R.length>1&&lo[1]<hi[1]?'Perlu lebih banyak latihan di <b>'+lo[0]+'</b>. ':'')+(av>=75?'Perkembangan secara umum sangat baik 👏':av>=55?'Perkembangan baik, terus semangati ya 👍':'Masih tahap awal, temani dan beri pujian supaya makin semangat 💪')+'</div>'}
+let LV=[];function rlv(){const e=$('#lv');if(!LV.length)return e.textContent='Belum ada aktivitas';const a=LV[0],m=(Date.now()-a.t)/60000,esc=x=>String(x).replace(/</g,'&lt;');
+e.innerHTML=(m<2?'<b style="color:#16a34a">🟢 Sedang aktif:</b> ':'<b>⚪ Terakhir:</b> ')+esc(a.act)+' <small>('+(m<1?'baru saja':m<60?Math.round(m)+' menit lalu':new Date(a.t).toLocaleString('id-ID'))+')</small><div style="margin-top:6px;font-size:13px">'+LV.slice(0,12).map(x=>new Date(x.t).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})+' · '+esc(x.act)).join('<br>')+'</div>'}
+setInterval(rlv,20000);C.sub('live',l=>{LV=l;rlv()});
 $('#fam').value=C.getFam();$('#sf').onclick=()=>C.setFam($('#fam').value);$('#st').textContent=C.online?'🟢 Online':C.err?'🔴 Gagal: '+C.err:'🟡 Mode lokal (isi firebase-config.js)';
 C.sub('hist',l=>{HL=l;rep();const av=l.length?Math.round(l.reduce((a,b)=>a+b.score,0)/l.length):0;$('#sum').textContent=l.length?`Rata-rata nilai: ${av} dari ${l.length} gambar terakhir`:'Belum ada gambar';
 $('#h').innerHTML=l.map(x=>`<div class="it"><img src="${x.thumb}"><div>⭐ ${x.score} · ${x.mv}</div><div>${new Date(x.t).toLocaleString('id-ID')}</div></div>`).join('')});

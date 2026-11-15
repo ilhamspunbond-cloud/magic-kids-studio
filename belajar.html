@@ -16,7 +16,7 @@ canvas{touch-action:none;background:#fff;border:3px solid #2a9d5c;border-radius:
 <p style="font-size:12px;color:#678;margin:14px">Pakai Chrome di Android (izinkan mikrofon). Suara guru memakai suara bawaan HP. Bacaan sebaiknya tetap dicek guru ngaji.</p>
 <script type="module">
 import*as C from './cloud.js';
-const $=s=>document.querySelector(s);let SLOW=0,PELAN=0;navigator.serviceWorker?.register('sw.js');const BIS=['بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ','Bismillahirrahmanirrahim'];
+const $=s=>document.querySelector(s);let SLOW=0,PELAN=0;const live=a=>C.add('live',{who:PROF.nama,act:a});live('Membuka menu belajar');navigator.serviceWorker?.register('sw.js');const BIS=['بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ','Bismillahirrahmanirrahim'];
 const L={
 ikhlas:{n:'Surat Al-Ikhlas',v:[['قُلْ هُوَ اللَّهُ أَحَدٌ','Qul huwallahu ahad'],['اللَّهُ الصَّمَدُ','Allahush shamad'],['لَمْ يَلِدْ وَلَمْ يُولَدْ','Lam yalid wa lam yulad'],['وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ','Wa lam yakul lahu kufuwan ahad']]},
 kautsar:{n:'Surat Al-Kautsar',v:[['إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ','Inna a\'thainakal kautsar'],['فَصَلِّ لِرَبِّكَ وَانْحَرْ','Fashalli lirabbika wanhar'],['إِنَّ شَانِئَكَ هُوَ الْأَبْتَرُ','Inna syani\'aka huwal abtar']]},
@@ -38,8 +38,8 @@ function cek(exp,alts){const E=nz(exp);let best={s:0,ok:E.map(()=>false)};for(co
 const hl=(a,ok)=>$('#ar').innerHTML=a.split(' ').map((w,i)=>`<span style="color:${ok[i]?'#2a9d5c':'#e63946'}">${w}</span>`).join(' ');
 const msg=t=>$('#msg').textContent=String(t).replace(/Shanum/g,PROF.nama),fail='Browser ini belum bisa mendengar suara. Buka dengan Chrome di Android ya.';
 function open(){run++;$('#menu').hidden=true;$('#pl').hidden=false;$('#gm').hidden=true;$('#ar').dir='rtl';$('#wc').hidden=$('#ok').hidden=$('#rs').hidden=true;$('#ar').textContent=$('#lt').textContent=$('#msg').textContent='';return run}
-function selesai(id,jenis,nilai){if(id!=run)return;C.add('belajar',{jenis,nilai,who:PROF.nama});msg(`Alhamdulillah, selesai! Nilai: ${nilai} ⭐`);speak(`Alhamdulillah, selesai! Nilai kamu ${nilai}`);$('#stop').textContent='⬅ Kembali'}
-async function ngaji(k){const id=open(),les={n:L[k].n,v:[BIS,...L[k].v]},sk=[];$('#stop').textContent='⏹ Berhenti';
+function selesai(id,jenis,nilai){if(id!=run)return;C.add('belajar',{jenis,nilai,who:PROF.nama});live('Selesai '+jenis+', nilai '+nilai);msg(`Alhamdulillah, selesai! Nilai: ${nilai} ⭐`);speak(`Alhamdulillah, selesai! Nilai kamu ${nilai}`);$('#stop').textContent='⬅ Kembali'}
+async function ngaji(k){const id=open(),les={n:L[k].n,v:[BIS,...L[k].v]},sk=[],_l=live('Mengaji: '+L[k].n);$('#stop').textContent='⏹ Berhenti';
 for(const[a,l]of les.v){let best=0;$('#ar').textContent=a;$('#lt').textContent=l;
 for(let t=0;t<3&&id==run&&best<.75;t++){msg('👂 Dengarkan guru...');await speak(a,'ar-SA');if(id!=run)return;msg('🗣 Giliran kamu, Shanum!');await speak('Giliran kamu, Sanum!');if(id!=run)return;msg('🎙 Mendengarkan...');
 const alts=await listen('ar-SA');if(id!=run)return;if(alts===null)return msg(fail);if(!alts.length){await speak('Ayo, bacanya lebih keras ya');continue}
@@ -47,15 +47,10 @@ const r=cek(a,alts);hl(a,r.ok);best=Math.max(best,r.s);
 if(r.s>=.75)await speak('Wah, hebat Sanum! Bacaanmu sudah tepat');else{msg('Hampir tepat. Yang merah belum pas, ayo coba lagi!');await speak('Hampir tepat. Dengarkan lagi ya, lalu coba lagi')}}
 sk.push(best)}
 selesai(id,les.n,Math.round(100*sk.reduce((a,b)=>a+b,0)/sk.length))}
-async function hitung(){const id=open();$('#ar').dir='ltr';$('#stop').textContent='⏹ Berhenti';let benar=0;
-for(let i=0;i<5;i++){const a=1+Math.random()*8|0,p=Math.random()<.5,b=1+Math.random()*(p?10-a:a)|0,h=p?a+b:a-b;let ok=0;$('#ar').textContent=`${a} ${p?'+':'−'} ${b} =`;
-for(let t=0;t<3&&!ok;t++){SLOW=t>0;$('#lt').textContent='';msg('👂 Dengarkan soalnya...');await speak(`${a} ${p?'tambah':'kurang'} ${b} sama dengan berapa`);if(id!=run)return;msg('🗣 Giliran kamu, Shanum!');await speak('Giliran kamu, Sanum!');if(id!=run)return;msg('🎙 Mendengarkan...');
-const al=await listen('id-ID',7000);if(id!=run)return;if(al===null)return msg(fail);
-if(!al.length){await speak('Aku belum dengar. Coba lagi ya, pelan-pelan');continue}
-$('#lt').textContent='Terdengar: '+al[0];const got=al.flatMap(x=>{x=x.toLowerCase();const o=(x.match(/\d+/g)||[]).map(Number);for(const wd in NUM)if(x.includes(wd))o.push(NUM[wd]);return o});
-if(got.includes(h)){ok=1;benar++;msg('✅ Benar! Kamu hebat!');await speak('Benar! Kamu hebat, Sanum!')}else await speak('Hampir. Ayo hitung pelan-pelan lagi')}
-SLOW=false;if(!ok){msg(`Jawabannya ${h}. Tidak apa-apa, kita coba lagi nanti ya 😊`);await speak(`Jawabannya ${h}. Tidak apa-apa, ayo lanjut`)}}
-selesai(id,'Berhitung',benar*20)}
+const NW='nol satu dua tiga empat lima enam tujuh delapan sembilan sepuluh'.split(' ');
+function hitung(){const qs=[];for(let i=0;i<5;i++){const a=1+Math.random()*8|0,p=Math.random()<.5,b=1+Math.random()*(p?10-a:a)|0,h=p?a+b:a-b,w=new Set();while(w.size<2){const v=h+(Math.random()*7|0)-3;if(v!=h&&v>=0)w.add(v)}
+qs.push([`${a} ${p?'+':'−'} ${b} =`,[String(h),...[...w].map(String)],0,`Jawabannya ${h}.`,`${NW[a]} ${p?'tambah':'kurang'} ${NW[b]} sama dengan berapa`])}
+tebak(qs,'Berhitung')}
 const wc=$('#wc'),x=wc.getContext('2d'),sk=document.createElement('canvas');sk.width=sk.height=300;const sx=sk.getContext('2d');let hi,pd,lp;
 const FONT='bold 230px "Amiri","Noto Naskh Arabic",serif';
 function huruf(i){const id=open();hi=i;$('#stop').textContent='⬅ Kembali';$('#wc').hidden=$('#ok').hidden=$('#rs').hidden=false;$('#lt').textContent='Tulis huruf '+HURUF[i][1];sx.clearRect(0,0,300,300);rend();speak('Tulis huruf '+HURUF[i][1])}
@@ -78,7 +73,7 @@ const ABC='a be ce de e ef ge ha i je ka el em en o pe ki er es te u ve we eks y
 const SUKU='ba bi bu be bo ca ci cu da di du ga gi gu ka ki ku la li lu ma mi mu na ni nu pa pi pu ra ri ru sa si su ta ti tu'.split(' ');
 const KATA='i-bu ba-pak ku-da i-kan bu-ku ma-ta ba-ju ka-ki sa-pi ba-ta ku-cing pi-sang ru-mah ma-kan'.split(' ');
 const MATCH=[['🐟','ikan'],['🐴','kuda'],['🍎','apel'],['📖','buku'],['🐱','kucing'],['🍌','pisang'],['🚗','mobil'],['🏠','rumah'],['🐘','gajah'],['🍉','semangka'],['🐄','sapi'],['👕','baju']];
-async function latih(items,jenis){const id=open();$('#ar').dir='ltr';$('#stop').textContent='⏹ Berhenti';const sk=[];
+async function latih(items,jenis){const id=open();live('Mulai '+jenis);$('#ar').dir='ltr';$('#stop').textContent='⏹ Berhenti';const sk=[];
 for(const[tp,parts,exp]of items){$('#ar').textContent=tp;$('#lt').textContent='';let best=0;
 for(let t=0;t<3&&id==run&&best<.6;t++){SLOW=t>0;msg(t?'🐢 Ayo ikuti pelan-pelan...':'👂 Dengarkan...');for(const q of parts){await speak(q);await new Promise(r=>setTimeout(r,250))}if(parts.length>1)await speak(exp);if(id!=run)return;
 msg('🗣 Giliran kamu, Shanum!');await speak('Giliran kamu, Sanum!');if(id!=run)return;msg('🎙 Mendengarkan...');const al=await listen('id-ID',7000);if(id!=run)return;if(al===null)return msg(fail);
@@ -113,9 +108,9 @@ const KAR=[['Temanmu menangis karena mainannya rusak. Apa yang kamu lakukan?',['
 ['Mengaji terasa sulit.',['Mencoba lagi pelan-pelan','Menyerah dan marah'],0,'Anak pandai tidak mudah menyerah.'],
 ['Kamu tidak sengaja memecahkan gelas.',['Jujur bilang ke Ibu dan minta maaf','Menyembunyikan pecahannya'],0,'Berkata jujur itu berani dan baik.'],
 ['Ada orang tua membawa barang berat.',['Menawarkan bantuan','Terus bermain saja'],0,'Menolong orang tua itu perbuatan mulia.']];
-async function tebak(data,jenis){const id=open();$('#ar').dir='ltr';$('#stop').textContent='⏹ Berhenti';const g=$('#gm');g.hidden=false;const qs=[...data].sort(()=>Math.random()-.5).slice(0,5);let skor=0;
-for(const[q,ops,ans,pen]of qs){if(id!=run)return;$('#ar').style.fontSize='20px';$('#ar').textContent=q;msg('');g.innerHTML='';const od=ops.map((o,i)=>({o,ok:i==ans})).sort(()=>Math.random()-.5);
-skor+=await new Promise(done=>{let salah=0;speak(q);od.forEach(x=>{const b=document.createElement('button');b.className='op';b.textContent=x.o;b.onclick=async()=>{if(x.ok){b.style.background='#c9f0d8';msg('✅ Hebat! '+pen);await speak('Wah, hebat Sanum! '+pen);done(salah?0:1)}else{salah++;b.style.background='#ffe0e0';b.disabled=true;msg('Coba pikir lagi ya 🤔');await speak('Coba pikir lagi ya')}};g.append(b)})})}
+async function tebak(data,jenis){const id=open();live('Mulai '+jenis);$('#ar').dir='ltr';$('#stop').textContent='⏹ Berhenti';const g=$('#gm');g.hidden=false;const qs=[...data].sort(()=>Math.random()-.5).slice(0,5);let skor=0;
+for(const[q,ops,ans,pen,sp]of qs){if(id!=run)return;$('#ar').style.fontSize='20px';$('#ar').textContent=q;msg('');g.innerHTML='';const od=ops.map((o,i)=>({o,ok:i==ans})).sort(()=>Math.random()-.5);
+skor+=await new Promise(done=>{let salah=0;speak((sp||q)+'. '+od.map((x,i)=>'ABC'[i]+', '+x.o).join('. '));od.forEach((x,i)=>{const b=document.createElement('button');b.className='op';b.textContent='ABC'[i]+'. '+x.o;b.onclick=async()=>{if(x.ok){b.style.background='#c9f0d8';live(jenis+': benar - '+String(q).slice(0,40));msg('✅ Hebat! '+pen);await speak('Wah, hebat Sanum! '+pen);done(salah?0:1)}else{salah++;b.style.background='#ffe0e0';b.disabled=true;live(jenis+': salah dulu - '+String(q).slice(0,40));msg('Coba pikir lagi ya 🤔');await speak('Coba pikir lagi ya')}};g.append(b)})})}
 g.hidden=true;$('#ar').style.fontSize='';selesai(id,jenis,Math.round(100*skor/qs.length))}
 const H=location.hash.slice(1)||'ngaji',M=$('#menu'),mk=(t,f)=>{const e=document.createElement('button');e.textContent=t;e.onclick=f;M.append(e)};
 const TT={ngaji:'🕌 Ngaji &amp; Doa',baca:'📖 Membaca huruf hijaiyah',tulis:'✍️ Menulis huruf hijaiyah',hitung:'🔢 Berhitung',tebak:'🧠 Tebak &amp; Pilih'};M.innerHTML='<h3>'+(TT[H]||TT.ngaji)+'</h3>';
